@@ -8,6 +8,7 @@ require (
 	github.com/go-openapi/analysis v0.21.3 // indirect
 	github.com/go-openapi/runtime v0.24.1 // indirect
 	github.com/go-openapi/spec v0.20.6 // indirect
+	github.com/go-redis/redis/v8 v8.11.5 // indirect
 	github.com/go-swagger/go-swagger v0.29.0 // indirect
 	github.com/rs/xid v1.4.0
 	github.com/spf13/viper v1.12.0 // indirect

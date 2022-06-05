@@ -18,7 +18,9 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis/v8"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
@@ -54,6 +56,14 @@ func init() {
 	}
 	log.Println("Inserted recipes: ", len(insertManyResult.InsertedIDs))
 	*/
+	redisClient := redis.NewClient(&redis.Options{
+		Addr:     "localhost:6379",
+		Password: "",
+		DB:       0,
+	})
+	status := redisClient.Ping(ctx)
+	recipesHandler = handlers.NewRecipesHandler(ctx, collection, redisClient)
+	fmt.Println(status)
 }
 
 func main() {
