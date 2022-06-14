@@ -1,6 +1,10 @@
 MongoDB
 export MONGO_DATABASE=demo
+export X_API_KEY=eUbP9shywUygMx7u
 export MONGO_URI="mongodb://admin:password@localhost:27017/test?authSource=admin"
 docker run -d --name mongodb -v /home/data:/data/db -e MONGO_INITDB_ROOT_USERNAME=admin -e MONGO_INITDB_ROOT_PASSWORD=password -p 27017:27017 mongo:4.4.3
 Redis:
 docker run -d -v $PWD/conf:/usr/local/etc/redis --name redis -p 6379:6379 redis:6.0
+
+
+docker rm -f redis || true

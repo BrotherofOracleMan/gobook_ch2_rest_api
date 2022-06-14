@@ -18,7 +18,8 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"github.com/gin-contrib/sessions"
+	redisStore "github.com/gin-contrib/sessions/redis"
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -31,47 +32,53 @@ import (
 
 // swagger:parameters recipes newRecipe
 
-var ctx context.Context
 var err error
 var client *mongo.Client
 var collection *mongo.Collection
+var authHandler *handlers.AuthHandler
 var recipesHandler *handlers.RecipesHandler
 
 func init() {
-	/*
-		recipes = make([]Recipe, 0)
-		file, _ := ioutil.ReadFile("recipes.json")
-		_ = json.Unmarshal([]byte(file), &recipes)
-	*/
-	ctx = context.Background()
-	client, err = mongo.Connect(ctx, options.Client().ApplyURI(os.Getenv("MONGO_URI")))
+	ctx := context.Background()
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(os.Getenv("MONGO_URI")))
 	if err = client.Ping(context.TODO(), readpref.Primary()); err != nil {
-		log.Fatalln(err)
+		log.Fatal(err)
 	}
 	log.Println("Connected to MongoDB")
-	collection = client.Database(os.Getenv("MONGO_DATABASE")).Collection("recipes")
-	/*insertManyResult, err := collection.InsertMany(ctx, listOfRecipes)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	log.Println("Inserted recipes: ", len(insertManyResult.InsertedIDs))
-	*/
+	collectionRecipes := client.Database(os.Getenv("MONGO_DATABASE")).Collection("recipes")
+
 	redisClient := redis.NewClient(&redis.Options{
 		Addr:     "localhost:6379",
 		Password: "",
 		DB:       0,
 	})
+
 	status := redisClient.Ping(ctx)
-	recipesHandler = handlers.NewRecipesHandler(ctx, collection, redisClient)
-	fmt.Println(status)
+	log.Println(status)
+
+	recipesHandler = handlers.NewRecipesHandler(ctx, collectionRecipes, redisClient)
+
+	collectionUsers := client.Database(os.Getenv("MONGO_DATABASE")).Collection("users")
+	authHandler = handlers.NewAuthHandler(ctx, collectionUsers)
 }
 
 func main() {
 	router := gin.Default()
-	router.POST("/recipes", recipesHandler.NewRecipeHandler)
-	router.PUT("recipes/:id", recipesHandler.UpdateRecipeHandler)
+	store, _ := redisStore.NewStore(10, "tcp", "localhost:6379", "", []byte("secret"))
+	router.Use(sessions.Sessions("recipes_api", store))
 	router.GET("/recipes", recipesHandler.ListRecipesHandler)
-	router.DELETE("recipes/:id", recipesHandler.DeleteRecipeHandler)
-	router.GET("/recipes/search", recipesHandler.SearchRecipesHandler)
+
+	router.POST("/signin", authHandler.SignInHandler)
+	router.POST("/refresh", authHandler.RefreshHandler)
+	router.POST("/signout", authHandler.SignOutHandler)
+
+	authorized := router.Group("/")
+	authorized.Use(authHandler.AuthMiddleware())
+	{
+		authorized.POST("/recipes", recipesHandler.NewRecipeHandler)
+		authorized.PUT("recipes/:id", recipesHandler.UpdateRecipeHandler)
+		authorized.DELETE("recipes/:id", recipesHandler.DeleteRecipeHandler)
+		router.GET("/recipes/search", recipesHandler.SearchRecipesHandler)
+	}
 	router.Run()
 }
