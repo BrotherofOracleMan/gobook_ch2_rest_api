@@ -3,7 +3,9 @@ module gobook_ch2_rest_api
 go 1.16
 
 require (
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
 	github.com/felixge/httpsnoop v1.0.3 // indirect
+	github.com/gin-contrib/sessions v0.0.5 // indirect
 	github.com/gin-gonic/gin v1.8.0
 	github.com/go-openapi/analysis v0.21.3 // indirect
 	github.com/go-openapi/runtime v0.24.1 // indirect
